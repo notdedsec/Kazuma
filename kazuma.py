@@ -4,9 +4,9 @@ import math
 import json
 import logging
 import hashlib
-import emoji as emo
 from PIL import Image
 from io import BytesIO
+from emoji import UNICODE_EMOJI
 from telegram.utils.helpers import escape_markdown
 from telegram.ext import Updater, CommandHandler, run_async
 from telegram import Bot, TelegramError, ParseMode, InlineKeyboardMarkup, InlineKeyboardButton
@@ -20,7 +20,6 @@ def steal(bot, update, args):
 
     msg = update.effective_message
     user = update.effective_user
-    hash = hashlib.sha1(bytearray(user.id)).hexdigest()[:10]
     tempsticker = f"{str(user.id)}.png"
 
     if not msg.reply_to_message: 
@@ -28,8 +27,8 @@ def steal(bot, update, args):
         return
 
     arg = ' '.join(args)
-    emoji = ''.join(c for c in arg if c in emo.UNICODE_EMOJI)
-    packname = ' '.join(''.join(c for c in arg if c not in emo.UNICODE_EMOJI).split())
+    emoji = ''.join(c for c in arg if c in UNICODE_EMOJI)
+    packname = ' '.join(''.join(c for c in arg if c not in UNICODE_EMOJI).split())
 
     if not emoji:
         try: emoji = msg.reply_to_message.sticker.emoji
@@ -41,8 +40,9 @@ def steal(bot, update, args):
         else: packname = user.first_name[:35] + "\'s Stolen Pack"
         if len(packname) > 50: packname = packname[:50]
     
-    packid = f'{packname.lower()}_{hash}_by_{bot.username}'
-    packid = packid.replace(' ', '_').replace('\'', '')
+    useridhash = hashlib.sha1(bytearray(user.id)).hexdigest()[:10]
+    packnamehash = hashlib.sha1(bytearray(packname.encode('utf-8'))).hexdigest()[:10]
+    packid = f'{packnamehash}_{useridhash}_by_{bot.username}'
 
     try:
         if msg.reply_to_message.sticker: 
@@ -60,7 +60,7 @@ def steal(bot, update, args):
         msg.reply_text(s.REPLY_NOT_STICKER_IMAGE)
         return
 
-    reply = msg.reply_text(s.STEALING)
+    reply = msg.reply_text(s.STEALING, parse_mode=ParseMode.MARKDOWN)
 
     try:
         im = processimage(tempsticker)
@@ -76,13 +76,18 @@ def steal(bot, update, args):
         elif e.message == "Invalid sticker emojis": 
             reply.edit_text(s.INVALID_EMOJI)
 
+        elif e.message == "Sticker set name invalid":
+            reply.edit_text(s.INVALID_PACKNAME)
+
         elif e.message == "Stickers_too_much": 
             reply.edit_text(s.PACK_LIMIT_EXCEEDED)
 
         elif e.message == "Internal Server Error: sticker set not found (500)":
             reply.edit_text(s.STEAL_SUCESSFUL.format(packid), parse_mode=ParseMode.MARKDOWN)
 
-        else: reply.edit_text(s.STEAL_ERROR)
+        else: 
+            reply.edit_text(s.STEAL_ERROR)
+            print(e.message)
 
     finally: im.close()
 
@@ -92,7 +97,6 @@ def stealpack(bot, update, args):
 
     msg = update.effective_message
     user = update.effective_user
-    hash = hashlib.sha1(bytearray(user.id)).hexdigest()[:10]
 
     if not msg.reply_to_message:
         msg.reply_markdown(s.STEALPACK_NOT_REPLY)
@@ -101,7 +105,7 @@ def stealpack(bot, update, args):
     if msg.reply_to_message.sticker:
 
         try:
-            reply = msg.reply_text(s.STEALING)
+            reply = msg.reply_text(s.STEALING, parse_mode=ParseMode.MARKDOWN)
             packname = ' '.join(args)
             oldpackname = msg.reply_to_message.sticker.set_name
             if packname == '': packname = f'{user.first_name[:35]}\'s Stolen {oldpackname} Pack'
@@ -112,11 +116,12 @@ def stealpack(bot, update, args):
                 reply.edit_text(s.PACK_DOESNT_EXIST, parse_mode=ParseMode.MARKDOWN)
                 return
 
-        counter = 0
-        total = len(oldpack.stickers)
-        packid = f'{packname.lower()}_{hash}_by_{bot.username}'
-        packid = packid.replace(' ', '_').replace('\'', '')
+        useridhash = hashlib.sha1(bytearray(user.id)).hexdigest()[:10]
+        packnamehash = hashlib.sha1(bytearray(packname.encode('utf-8'))).hexdigest()[:10]
+        packid = f'{packnamehash}_{useridhash}_by_{bot.username}'
 
+        count = 0
+        total = len(oldpack.stickers)
         for sticker in oldpack.stickers:
 
             try:
@@ -128,21 +133,22 @@ def stealpack(bot, update, args):
 
             except TelegramError as e: 
 
-                if e.message == "Stickerset_invalid": 
-                    newpack(msg, user, open(tempsticker, 'rb'), sticker.emoji, packname, packid, False, reply, bot)
-                    return
-                elif e.message == "Sticker_png_dimensions": 
+                if e.message == "Sticker_png_dimensions": 
                     reply.edit_text(s.RESIZE_ERROR)
                     return
+
                 elif e.message == "Invalid sticker emojis": 
                     reply.edit_text(s.INVALID_EMOJI)
                     return
+                
+                elif e.message == "Stickerset_invalid": 
+                    newpack(msg, user, open(tempsticker, 'rb'), sticker.emoji, packname, packid, False, reply, bot)
 
             finally: im.close()
 
-            counter += 1
+            count += 1
             os.remove(tempsticker)
-            reply.edit_text(s.STEALING_PACK.format(counter, total), timeout=9999)
+            reply.edit_text(s.STEALING_PACK.format(count, total), parse_mode=ParseMode.MARKDOWN, timeout=9999)
 
         reply.edit_text(s.STEAL_SUCESSFUL.format(packid), parse_mode=ParseMode.MARKDOWN)
 
@@ -174,7 +180,9 @@ def newpack(msg, user, png_sticker, emoji, packname, packid, sendreply, reply, b
         elif e.message == "Peer_id_invalid": 
             reply.edit_text(s.INVALID_PEER_ID, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton(text="Start", url=f"t.me/{bot.username}")]]))
 
-        else: reply.edit_text(s.STEALPACK_ERROR)
+        else: 
+            reply.edit_text(s.NEWPACK_ERROR)
+            print(e)
 
     else:
         if sendreply: 
@@ -279,14 +287,14 @@ def mypacks(bot, update):
     reply = f"{user.first_name}'s steal pack list :\n"
     blank = reply
 
-    counter = 0
+    count = 0
     for pack in packs:
-        counter += 1
+        count += 1
 
         if pack == defpack[0]:
-            reply += f"\n*{counter}.* [{pack[3]}](t.me/addstickers/{pack[0]}) ✓"
+            reply += f"\n*{count}.* [{pack[3]}](t.me/addstickers/{pack[0]}) ✓"
         else:
-            reply += f"\n*{counter}.* [{pack[3]}](t.me/addstickers/{pack[0]})"
+            reply += f"\n*{count}.* [{pack[3]}](t.me/addstickers/{pack[0]})"
 
     if reply == blank:
         msg.reply_text(s.NO_STOLEN_PACKS)
@@ -359,6 +367,17 @@ def restart(bot, update):
     os.execv('launch.bat', sys.argv)
 
 
+def gitpull(bot, update):
+
+    if update.message.from_user.id not in sudoList: 
+        update.effective_message.reply_text(s.NOT_SUDO)
+        return
+
+    update.effective_message.reply_text(s.GITPULL)
+    os.system('git pull')
+    os.execv('launch.bat', sys.argv)
+
+
 def start(bot, update):
     update.effective_message.reply_text(s.START)
 
@@ -369,10 +388,14 @@ def help(bot, update):
 
 if __name__ == "__main__":
 
-    with open('config.json', 'r') as f: 
-        config = json.load(f)
+    try:
+        with open('config.json', 'r') as f: config = json.load(f)
         sudoList = config['sudoList']
         botToken = config['botToken']
+    except:
+        config ={"database": "database-name.db", "botToken": "bot-token-here", "sudoList": [12345678, 87654321]}
+        with open('config.json', 'w') as f: json.dump(config, f, indent=4)
+        print('Edit the config.json and add all necessary information.')
 
     updater = Updater(botToken)
     os.system("title " + Bot(botToken).first_name)
@@ -386,6 +409,7 @@ if __name__ == "__main__":
     updater.dispatcher.add_handler(CommandHandler('switch', switch, pass_args=True))
     updater.dispatcher.add_handler(CommandHandler('mypacks', mypacks))
     updater.dispatcher.add_handler(CommandHandler('restart', restart))
+    updater.dispatcher.add_handler(CommandHandler('gitpull', gitpull))
     updater.dispatcher.add_handler(CommandHandler('start', start))
     updater.dispatcher.add_handler(CommandHandler('help', help))
 
@@ -393,14 +417,3 @@ if __name__ == "__main__":
     updater.start_polling()
     updater.idle()
 
-
-''' sample config.json
-{
-    "database": "database-name.db"
-    "botToken": "bot-token-here",
-    "sudoList": [
-        sudo-id-01, 
-        sudo-id-02
-    ]
-}
-'''

@@ -1,12 +1,12 @@
-
 START = "Yes, I'm Kazuma."
 RESTART = "Re;Starting Bot in Another Instance from Zero."
+GITPULL = "Re;Starting Bot in Another Instance from the Latest Commit."
 NOT_SUDO = "This is a developer restricted command.\nYou do not have permissions to run this."
 
-STEALING = "Stealing..."
+STEALING = "_STEAL!!_"
 STEALING_PACK = "Stolen {} out of {} stickers."
 
-NEW_PACK = "Stealing...\nCreating a new pack..."
+NEW_PACK = "_STEAL!!_\nCreating a new steal pack."
 NEW_PACK_CREATED = "New steal pack created! [Get it here](t.me/addstickers/{})."
 
 REPLY_NOT_STICKER = "This skill works only when replied to stickers."
@@ -16,13 +16,12 @@ REPLY_NOT_STICKER_IMAGE = "This skill only works on stickers and images."
 STEAL_ERROR = "I couldn't steal that sticker. Blame Aqua for being so useless."
 STEAL_NOT_REPLY = "Reply to an image or a sticker to steal."
 STEAL_SUCESSFUL = "Steal sucessful! Here's your [steal pack](t.me/addstickers/{})."
-
-STEALPACK_ERROR = "I was unable to create that sticker pack. Must be the Demon King's magic."
 STEALPACK_NOT_REPLY = "That's not how this skill is used. Reply to a sticker and send:\n/stealpack _<pack-name>_"
 
+NEWPACK_ERROR = "I was unable to create that sticker pack. Must be the Demon King's magic."
 RESIZE_ERROR = "Unable to resize image to the correct dimensions."
-INVALID_EMOJI = "Invalid emoji."
-INVALID_PACKNAME = "The pack name you specified is invalid."
+INVALID_EMOJI = "Some of the emojis you specified are not supported."
+INVALID_PACKNAME = "The pack name or emojis you specified contain unsupported characters."
 INVALID_PEER_ID = "Freshly isekai-d? Click the button to join my guild!"
 PACK_DOESNT_EXIST = "What you're trying to steal doesn't exist.\n_Lenny._"
 PACK_LIMIT_EXCEEDED = "This pack has reached maximum capacity. You can /switch to a different pack or make a new one."
@@ -39,7 +38,7 @@ SETPOSITION_ERROR = "I couldn't change sticker positions. Maybe the undead are i
 
 NO_STOLEN_PACKS = "You haven't stolen any packs yet newb."
 
-SWITCH_INVALID_INPUT =  "Specify the pack you want to be set as default by:\n/stealpack _<pack-name>_\n/stealpack _<pack-index-number>_"
+SWITCH_INVALID_INPUT =  "Specify the pack you want to be set as default by:\n/switch _<pack-name>_\n/switch _<pack-index-number>_"
 SWITCH_PACK_DOESNT_EXIST = "I don't think this pack exists. Use /mypacks to get a list of packs that you've stolen."
 SWITCH_ALREADY_DEFAULT = "*{}* is already set as your default pack."
 SWITCH_CHANGED_DEFAULT = "*{}* is now set as your default pack."
