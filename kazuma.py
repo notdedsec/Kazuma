@@ -6,7 +6,7 @@ import logging
 import hashlib
 from PIL import Image
 from io import BytesIO
-from emoji import UNICODE_EMOJI
+from emoji import demojize, UNICODE_EMOJI
 from telegram.utils.helpers import escape_markdown
 from telegram.ext import Updater, CommandHandler, run_async
 from telegram import Bot, TelegramError, ParseMode, InlineKeyboardMarkup, InlineKeyboardButton
@@ -26,23 +26,26 @@ def steal(bot, update, args):
         msg.reply_text(s.STEAL_NOT_REPLY)
         return
 
-    arg = ' '.join(args)
-    emoji = ''.join(c for c in arg if c in UNICODE_EMOJI)
-    packname = ' '.join(''.join(c for c in arg if c not in UNICODE_EMOJI).split())
+    emoji = "🤔"
+    emojimode = True
 
-    if not emoji:
-        try: emoji = msg.reply_to_message.sticker.emoji
-        except: emoji = "🤔"
-    
-    if not packname:
-        defpack = sql.get_default_pack(user.id)
-        if defpack: packname = defpack[0][3]
-        else: packname = user.first_name[:35] + "\'s Stolen Pack"
-        if len(packname) > 50: packname = packname[:50]
-    
-    useridhash = hashlib.sha1(bytearray(user.id)).hexdigest()[:10]
-    packnamehash = hashlib.sha1(bytearray(packname.encode('utf-8'))).hexdigest()[:10]
-    packid = f'{packnamehash}_{useridhash}_by_{bot.username}'
+    defpack = sql.get_default_pack(user.id)
+    if defpack: packname = defpack[0][3]
+    else: packname = user.first_name[:35] + "\'s Stolen Pack"
+
+    if args:
+        for x in args[-1]:
+            if demojize(x) == x and '\\xf0\\x9f\\x8f\\' not in str(demojize(x).encode('utf-8')):
+                emojimode = False
+        if emojimode:
+            if len(args) > 1: packname = ' '.join(args[:-1])
+            emoji = args[-1]
+        else: 
+            packname = ' '.join(args)
+
+    useridhash = hashlib.sha1(bytearray(user.id)).hexdigest()
+    packnamehash = hashlib.sha1(bytearray(packname.encode('utf-8'))).hexdigest()
+    packid = f'K{packnamehash[:10]}{useridhash[:10]}_by_{bot.username}'
 
     try:
         if msg.reply_to_message.sticker: 
@@ -116,9 +119,9 @@ def stealpack(bot, update, args):
                 reply.edit_text(s.PACK_DOESNT_EXIST, parse_mode=ParseMode.MARKDOWN)
                 return
 
-        useridhash = hashlib.sha1(bytearray(user.id)).hexdigest()[:10]
-        packnamehash = hashlib.sha1(bytearray(packname.encode('utf-8'))).hexdigest()[:10]
-        packid = f'{packnamehash}_{useridhash}_by_{bot.username}'
+        useridhash = hashlib.sha1(bytearray(user.id)).hexdigest()
+        packnamehash = hashlib.sha1(bytearray(packname.encode('utf-8'))).hexdigest()
+        packid = f'K{packnamehash[:10]}{useridhash[:10]}_by_{bot.username}'
 
         count = 0
         total = len(oldpack.stickers)
@@ -136,13 +139,11 @@ def stealpack(bot, update, args):
                 if e.message == "Sticker_png_dimensions": 
                     reply.edit_text(s.RESIZE_ERROR)
                     return
-
-                elif e.message == "Invalid sticker emojis": 
-                    reply.edit_text(s.INVALID_EMOJI)
-                    return
                 
                 elif e.message == "Stickerset_invalid": 
                     newpack(msg, user, open(tempsticker, 'rb'), sticker.emoji, packname, packid, False, reply, bot)
+                
+                print(e.message)
 
             finally: im.close()
 
@@ -158,7 +159,7 @@ def stealpack(bot, update, args):
 def newpack(msg, user, png_sticker, emoji, packname, packid, sendreply, reply, bot):
     
     try:
-        reply.edit_text(s.NEW_PACK)
+        reply.edit_text(s.NEW_PACK, parse_mode=ParseMode.MARKDOWN)
         bot.createNewStickerSet(user.id, packid, packname, png_sticker=png_sticker, emojis=emoji, timeout=99999)
         default = 0 if sql.get_default_pack(user.id) else 1
         sql.new_pack(packid, user.id, default, packname)
@@ -174,7 +175,7 @@ def newpack(msg, user, png_sticker, emoji, packname, packid, sendreply, reply, b
             default = 0 if sql.get_default_pack(user.id) else 1
             sql.new_pack(packid, user.id, default, packname)
 
-        elif e.message == "Sticker set name invalid" and not sendreply: 
+        elif e.message == "Sticker set name invalid" and sendreply: 
             reply.edit_text(s.INVALID_PACKNAME)
 
         elif e.message == "Peer_id_invalid": 
@@ -392,6 +393,7 @@ if __name__ == "__main__":
         with open('config.json', 'r') as f: config = json.load(f)
         sudoList = config['sudoList']
         botToken = config['botToken']
+
     except:
         config ={"database": "database-name.db", "botToken": "bot-token-here", "sudoList": [12345678, 87654321]}
         with open('config.json', 'w') as f: json.dump(config, f, indent=4)
