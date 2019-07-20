@@ -71,6 +71,9 @@ def steal(bot, update, args):
         bot.addStickerToSet(user_id=user.id, name=packid, png_sticker=open(tempsticker, 'rb'), emojis=emoji, timeout=99999)
         reply.edit_text(s.STEAL_SUCESSFUL.format(packid), parse_mode=ParseMode.MARKDOWN)
 
+    except OSError as e:
+        reply.edit_text(s.OS_ERROR)
+
     except TelegramError as e:
 
         if e.message == "Stickerset_invalid": 
@@ -101,59 +104,66 @@ def stealpack(bot, update, args):
     msg = update.effective_message
     user = update.effective_user
 
-    if not msg.reply_to_message:
+    if not msg.reply_to_message.sticker:
         msg.reply_markdown(s.STEALPACK_NOT_REPLY)
         return
 
-    if msg.reply_to_message.sticker:
+    if not args:
+        msg.reply_markdown(s.STEALPACK_NO_ARGS)
+        return
+
+    packname = ' '.join(args)
+    reply = msg.reply_text(s.STEALING, parse_mode=ParseMode.MARKDOWN)
+
+    try: oldpack = bot.getStickerSet(msg.reply_to_message.sticker.set_name)
+    except TelegramError as e:
+        if e.message == "Stickerset_invalid": 
+            reply.edit_text(s.PACK_DOESNT_EXIST, parse_mode=ParseMode.MARKDOWN)
+            return
+
+    useridhash = hashlib.sha1(bytearray(user.id)).hexdigest()
+    packnamehash = hashlib.sha1(bytearray(packname.encode('utf-8'))).hexdigest()
+    packid = f'K{packnamehash[:10]}{useridhash[:10]}_by_{bot.username}'
+
+    count = 0
+    skipped = False
+    total = len(oldpack.stickers)
+    for sticker in oldpack.stickers:
 
         try:
-            reply = msg.reply_text(s.STEALING, parse_mode=ParseMode.MARKDOWN)
-            packname = ' '.join(args)
-            oldpackname = msg.reply_to_message.sticker.set_name
-            if packname == '': packname = f'{user.first_name[:35]}\'s Stolen {oldpackname} Pack'
-            oldpack = bot.getStickerSet(oldpackname)
+            tempsticker = f"{str(sticker.file_id) + str(user.id)}.png"
+            bot.get_file(sticker.file_id).download(tempsticker)
+            im = processimage(tempsticker)
+            im.save(tempsticker, "PNG")
+            bot.addStickerToSet(user_id=user.id, name=packid, png_sticker=open(tempsticker, 'rb'), emojis=sticker.emoji)
 
-        except TelegramError as e:
-            if e.message == "Stickerset_invalid": 
-                reply.edit_text(s.PACK_DOESNT_EXIST, parse_mode=ParseMode.MARKDOWN)
+        except (OSError, PermissionError) as e:
+            skipped = True
+            pass
+
+        except TelegramError as e: 
+
+            if e.message == "Stickers_too_much":
+                skipped = True
+                pass
+            
+            elif e.message == "Sticker_png_dimensions": 
+                reply.edit_text(s.RESIZE_ERROR)
                 return
+            
+            elif e.message == "Stickerset_invalid": 
+                newpack(msg, user, open(tempsticker, 'rb'), sticker.emoji, packname, packid, False, reply, bot)
+            
+            print(e.message)
 
-        useridhash = hashlib.sha1(bytearray(user.id)).hexdigest()
-        packnamehash = hashlib.sha1(bytearray(packname.encode('utf-8'))).hexdigest()
-        packid = f'K{packnamehash[:10]}{useridhash[:10]}_by_{bot.username}'
+        finally: im.close()
 
-        count = 0
-        total = len(oldpack.stickers)
-        for sticker in oldpack.stickers:
+        count += 1
+        os.remove(tempsticker)
+        reply.edit_text(s.STEALING_PACK.format(count, total), parse_mode=ParseMode.MARKDOWN, timeout=9999)
 
-            try:
-                tempsticker = f"{str(sticker.file_id) + str(user.id)}.png"
-                bot.get_file(sticker.file_id).download(tempsticker)
-                im = processimage(tempsticker)
-                im.save(tempsticker, "PNG")
-                bot.addStickerToSet(user_id=user.id, name=packid, png_sticker=open(tempsticker, 'rb'), emojis=sticker.emoji)
-
-            except TelegramError as e: 
-
-                if e.message == "Sticker_png_dimensions": 
-                    reply.edit_text(s.RESIZE_ERROR)
-                    return
-                
-                elif e.message == "Stickerset_invalid": 
-                    newpack(msg, user, open(tempsticker, 'rb'), sticker.emoji, packname, packid, False, reply, bot)
-                
-                print(e.message)
-
-            finally: im.close()
-
-            count += 1
-            os.remove(tempsticker)
-            reply.edit_text(s.STEALING_PACK.format(count, total), parse_mode=ParseMode.MARKDOWN, timeout=9999)
-
-        reply.edit_text(s.STEAL_SUCESSFUL.format(packid), parse_mode=ParseMode.MARKDOWN)
-
-    else: msg.reply_text(s.REPLY_NOT_STICKER)
+    if skipped: reply.edit_text(s.STEAL_SKIPPED.format(packid), parse_mode=ParseMode.MARKDOWN)
+    else: reply.edit_text(s.STEAL_SUCESSFUL.format(packid), parse_mode=ParseMode.MARKDOWN)
 
 
 def newpack(msg, user, png_sticker, emoji, packname, packid, sendreply, reply, bot):
@@ -418,4 +428,3 @@ if __name__ == "__main__":
     logging.info('Bot Started.')
     updater.start_polling()
     updater.idle()
-

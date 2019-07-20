@@ -16,14 +16,16 @@ REPLY_NOT_STICKER_IMAGE = "This skill only works on stickers and images."
 STEAL_ERROR = "I couldn't steal that sticker. Blame Aqua for being so useless."
 STEAL_NOT_REPLY = "Reply to an image or a sticker to steal."
 STEAL_SUCESSFUL = "Steal sucessful! Here's your [steal pack](t.me/addstickers/{})."
-STEALPACK_NOT_REPLY = "That's not how this skill is used. Reply to a sticker and send:\n/stealpack _<pack-name>_"
+STEAL_SKIPPED = "Steal sucessful but some stickers might've been skipped. Here's your [steal pack](t.me/addstickers/{})."
+STEALPACK_NO_ARGS = "Specify a packname to steal stickers into. Like this:\n/stealpack _<pack-name>_"
+STEALPACK_NOT_REPLY = "Reply to a sticker and send:\n/stealpack _<pack-name>_"
 
 NEWPACK_ERROR = "I was unable to create that sticker pack. Must be the Demon King's magic."
 RESIZE_ERROR = "Unable to resize image to the correct dimensions."
 INVALID_EMOJI = "Some of the emojis you specified are not supported."
 INVALID_PACKNAME = "The pack name or emojis you specified contain unsupported characters."
 INVALID_PEER_ID = "Freshly isekai-d? Click the button to join my guild!"
-PACK_DOESNT_EXIST = "What you're trying to steal doesn't exist.\n_Lenny._"
+PACK_DOESNT_EXIST = "What you're trying to steal doesn't exist.\n( ͡° ͜ʖ ͡°)"
 PACK_LIMIT_EXCEEDED = "This pack has reached maximum capacity. You can /switch to a different pack or make a new one."
 PACK_ALREADY_EXISTS = "I think you're looking for [this pack](t.me/addstickers/{})."
 
@@ -32,10 +34,11 @@ DELETE_ERROR = "I couldn't delete that sticker. Looks like those Arch-Devils are
 DELETE_SUCESSFUL = "Poof! The sticker is gone."
 DELETE_NOT_REPLY = "This skill only works on stickers of packs that I have stolen."
 
-SETPOSITION_INVALID_INPUT = "That's not how this skill is used. Reply to a sticker and try:\n/setposition _<position-number>_"
+SETPOSITION_INVALID_INPUT = "That's not how this skill works. Reply to a sticker and try:\n/setposition _<position-number>_"
 SETPOSITION_NOT_REPLY = "Reply to the sticker whose position you wanna change."
 SETPOSITION_ERROR = "I couldn't change sticker positions. Maybe the undead are interfering with my magic."
 
+OS_ERROR = "Couldn't steal that one."
 NO_STOLEN_PACKS = "You haven't stolen any packs yet newb."
 
 SWITCH_INVALID_INPUT =  "Specify the pack you want to be set as default by:\n/switch _<pack-name>_\n/switch _<pack-index-number>_"
