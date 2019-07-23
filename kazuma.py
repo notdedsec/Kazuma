@@ -44,7 +44,7 @@ def steal(bot, update, args):
             packname = ' '.join(args)
 
     useridhash = hashlib.sha1(bytearray(user.id)).hexdigest()
-    packnamehash = hashlib.sha1(bytearray(packname.encode('utf-8'))).hexdigest()
+    packnamehash = hashlib.sha1(bytearray(packname.lower().encode('utf-8'))).hexdigest()
     packid = f'K{packnamehash[:10]}{useridhash[:10]}_by_{bot.username}'
 
     try:
@@ -68,7 +68,7 @@ def steal(bot, update, args):
     try:
         im = processimage(tempsticker)
         if not msg.reply_to_message.sticker: im.save(tempsticker, "PNG")
-        bot.addStickerToSet(user_id=user.id, name=packid, png_sticker=open(tempsticker, 'rb'), emojis=emoji, timeout=99999)
+        bot.addStickerToSet(user_id=user.id, name=packid, png_sticker=open(tempsticker, 'rb'), emojis=emoji)
         reply.edit_text(s.STEAL_SUCESSFUL.format(packid), parse_mode=ParseMode.MARKDOWN)
 
     except OSError as e:
@@ -104,30 +104,33 @@ def stealpack(bot, update, args):
     msg = update.effective_message
     user = update.effective_user
 
-    if not msg.reply_to_message.sticker:
+    if not args:
+        msg.reply_markdown(s.STEALPACK_NO_ARGS)
+        return
+
+    if not msg.reply_to_message:
         msg.reply_markdown(s.STEALPACK_NOT_REPLY)
         return
 
-    if not args:
-        msg.reply_markdown(s.STEALPACK_NO_ARGS)
+    try: sticker = msg.reply_to_message.sticker
+    except: 
+        msg.reply_markdown(s.REPLY_NOT_STICKER_IMAGE)
         return
 
     packname = ' '.join(args)
     reply = msg.reply_text(s.STEALING, parse_mode=ParseMode.MARKDOWN)
 
-    try: oldpack = bot.getStickerSet(msg.reply_to_message.sticker.set_name)
+    try: oldpack = bot.getStickerSet(sticker.set_name)
     except TelegramError as e:
         if e.message == "Stickerset_invalid": 
             reply.edit_text(s.PACK_DOESNT_EXIST, parse_mode=ParseMode.MARKDOWN)
             return
 
     useridhash = hashlib.sha1(bytearray(user.id)).hexdigest()
-    packnamehash = hashlib.sha1(bytearray(packname.encode('utf-8'))).hexdigest()
+    packnamehash = hashlib.sha1(bytearray(packname.lower().encode('utf-8'))).hexdigest()
     packid = f'K{packnamehash[:10]}{useridhash[:10]}_by_{bot.username}'
 
-    count = 0
     skipped = False
-    total = len(oldpack.stickers)
     for sticker in oldpack.stickers:
 
         try:
@@ -137,30 +140,21 @@ def stealpack(bot, update, args):
             im.save(tempsticker, "PNG")
             bot.addStickerToSet(user_id=user.id, name=packid, png_sticker=open(tempsticker, 'rb'), emojis=sticker.emoji)
 
-        except (OSError, PermissionError) as e:
-            skipped = True
-            pass
-
-        except TelegramError as e: 
-
-            if e.message == "Stickers_too_much":
+        except Exception as e:
+            
+            if e.message == "Stickerset_invalid":
+                newpack(msg, user, open(tempsticker, 'rb'), sticker.emoji, packname, packid, False, reply, bot)
+            else:
                 skipped = True
                 pass
-            
-            elif e.message == "Sticker_png_dimensions": 
-                reply.edit_text(s.RESIZE_ERROR)
-                return
-            
-            elif e.message == "Stickerset_invalid": 
-                newpack(msg, user, open(tempsticker, 'rb'), sticker.emoji, packname, packid, False, reply, bot)
-            
-            print(e.message)
 
         finally: im.close()
+        
+        try:
+            os.remove(tempsticker)
+            reply.edit_text(s.STEALING_PACK.format(oldpack.stickers.index(sticker), len(oldpack.stickers)), parse_mode=ParseMode.MARKDOWN)
 
-        count += 1
-        os.remove(tempsticker)
-        reply.edit_text(s.STEALING_PACK.format(count, total), parse_mode=ParseMode.MARKDOWN, timeout=9999)
+        except: pass
 
     if skipped: reply.edit_text(s.STEAL_SKIPPED.format(packid), parse_mode=ParseMode.MARKDOWN)
     else: reply.edit_text(s.STEAL_SUCESSFUL.format(packid), parse_mode=ParseMode.MARKDOWN)
@@ -374,6 +368,7 @@ def restart(bot, update):
         update.effective_message.reply_text(s.NOT_SUDO)
         return
 
+    print('\n---------\nRESTARTED\n---------')
     update.effective_message.reply_text(s.RESTART)
     os.execv('launch.bat', sys.argv)
 
@@ -384,6 +379,7 @@ def gitpull(bot, update):
         update.effective_message.reply_text(s.NOT_SUDO)
         return
 
+    print('\n---------\nGITPULLED\n---------')
     update.effective_message.reply_text(s.GITPULL)
     os.system('git pull')
     os.execv('launch.bat', sys.argv)
