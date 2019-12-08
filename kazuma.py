@@ -61,10 +61,8 @@ def steal(bot, update, args):
     pngsticker = open(tempsticker, 'rb')
 
     try:
-        im = processimage(tempsticker)
-        if not msg.reply_to_message.sticker: im.save(tempsticker, "PNG")
-        bot.addStickerToSet(user_id=user.id, name=packid, png_sticker=open(tempsticker, 'rb'), emojis=emoji)
-        reply.edit_text(s.STEAL_SUCESSFUL.format(packid), parse_mode=ParseMode.MARKDOWN)
+        bot.addStickerToSet(user_id=user.id, name=packid, png_sticker=pngsticker, emojis=emoji)
+        replymsg.edit_text(s.STEAL_SUCESSFUL.format(packid), parse_mode=ParseMode.MARKDOWN)
 
     except OSError as e:
         replymsg.edit_text(s.OS_ERROR)
@@ -105,16 +103,16 @@ def stealpack(bot, update, args):
     user = update.effective_user
 
     if not args:
-        msg.reply_markdown(s.STEALPACK_NO_ARGS)
+        reply(msg, s.STEALPACK_NO_ARGS)
         return
 
     if not msg.reply_to_message:
-        msg.reply_markdown(s.STEALPACK_NOT_REPLY)
+        reply(msg, s.STEALPACK_NOT_REPLY)
         return
 
     try: sticker = msg.reply_to_message.sticker
     except: 
-        msg.reply_markdown(s.REPLY_NOT_STICKER_IMAGE)
+        reply(msg, s.REPLY_NOT_STICKER_IMAGE)
         return
 
     packname = ' '.join(args)
@@ -140,24 +138,23 @@ def stealpack(bot, update, args):
         try:
             tempsticker = f"{str(sticker.file_id) + str(user.id)}.png"
             bot.get_file(sticker.file_id).download(tempsticker)
-            im = processimage(tempsticker)
-            im.save(tempsticker, "PNG")
-            bot.addStickerToSet(user_id=user.id, name=packid, png_sticker=open(tempsticker, 'rb'), emojis=sticker.emoji)
+            processimage(tempsticker)
+            pngsticker = open(tempsticker, 'rb')
+            bot.addStickerToSet(user_id=user.id, name=packid, png_sticker=pngsticker, emojis=sticker.emoji)
 
         except Exception as e:
             
             if e.message == "Stickerset_invalid":
-                newpack(msg, user, open(tempsticker, 'rb'), sticker.emoji, packname, packid, False, reply, bot)
+                newpack(msg, user, tempsticker, sticker.emoji, packname, packid, False, replymsg, bot)
             else:
                 skipped = True
                 pass
 
-        finally: im.close()
+        finally: 
+            pngsticker.close()
+            os.system('del '+tempsticker)
         
-        try:
-            os.remove(tempsticker)
-            reply.edit_text(s.STEALING_PACK.format(oldpack.stickers.index(sticker), len(oldpack.stickers)), parse_mode=ParseMode.MARKDOWN)
-
+        try: replymsg.edit_text(s.STEALING_PACK.format(oldpack.stickers.index(sticker), len(oldpack.stickers)), parse_mode=ParseMode.MARKDOWN)
         except: pass
 
     if skipped: replymsg.edit_text(s.STEAL_SKIPPED.format(packid), parse_mode=ParseMode.MARKDOWN)
@@ -407,7 +404,7 @@ def gitpull(bot, update):
         return
 
     print('\n---------\nGITPULLED\n---------')
-    update.effective_message.reply_text(s.GITPULL)
+    reply(update.effective_message, s.GITPULL)
     os.system('git pull')
     os.execv('launch.bat', sys.argv)
 
