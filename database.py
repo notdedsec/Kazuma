@@ -40,6 +40,9 @@ REMOVE_DEFAULT = """UPDATE packdb
 SET def = 0
 WHERE uid = {} AND def = 1;"""
 
+GET_ALL = """SELECT *
+FROM packdb;"""
+
 CREATE_DB = """CREATE TABLE IF NOT EXISTS packdb (
     pid NVARCHAR(128) PRIMARY KEY,
     uid INTEGER,
@@ -83,6 +86,9 @@ def set_default_by_name(packname, uid):
 
 def remove_default(uid):
     return(execute(REMOVE_DEFAULT.format(uid)))
+
+def get_all():
+    return(execute(GET_ALL))
 
 def create_db(database):
     return(execute(CREATE_DB))
