@@ -28,18 +28,17 @@ INVALID_PEER_ID = "Freshly isekai-d? Click the button to join my guild!"
 PACK_DOESNT_EXIST = "What you're trying to steal doesn't exist.\n( ͡° ͜ʖ ͡°)"
 PACK_LIMIT_EXCEEDED = "This pack has reached maximum capacity. You can /switch to a different pack or make a new one."
 PACK_ALREADY_EXISTS = "I think you're looking for [this pack](t.me/addstickers/{})."
+NO_STOLEN_PACKS = "You haven't stolen any packs yet newb."
 
 DELETE_PACK = "This is beyond my powers. Use @stickers to delete sticker packs."
 DELETE_ERROR = "I couldn't delete that sticker. Looks like those Arch-Devils are at it again."
 DELETE_SUCESSFUL = "Poof! The sticker is gone."
 DELETE_NOT_REPLY = "This skill only works on stickers of packs that I have stolen."
+DELETE_NOT_YOUR_PACK = "Hah! Nice try but you can't delete other's stikcers."
 
 SETPOSITION_INVALID_INPUT = "That's not how this skill works. Reply to a sticker and try:\n/setposition _<position-number>_"
 SETPOSITION_NOT_REPLY = "Reply to the sticker whose position you wanna change."
 SETPOSITION_ERROR = "I couldn't change sticker positions. Maybe the undead are interfering with my magic."
-
-OS_ERROR = "Couldn't steal that one."
-NO_STOLEN_PACKS = "You haven't stolen any packs yet newb."
 
 SWITCH_INVALID_INPUT =  "Specify the pack you want to be set as default by:\n/switch _<pack-name>_\n/switch _<pack-index-number>_"
 SWITCH_PACK_DOESNT_EXIST = "I don't think this pack exists. Use /mypacks to get a list of packs that you've stolen."
@@ -59,3 +58,5 @@ Here's a list of skills that I can use:
 /delsticker - Delete sticker from pack
 /setposition - Change sticker postiton
 """
+STATS = "Stealers: {}\nStolen Packs: {}"
+GIST = "https://gist.github.com/notdedsec/2c4aa0359aef072b0e3025d55eaba858"
