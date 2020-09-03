@@ -29,12 +29,14 @@ PACK_DOESNT_EXIST = "What you're trying to steal doesn't exist.\n( ͡° ͜ʖ ͡�
 PACK_LIMIT_EXCEEDED = "This pack has reached maximum capacity. You can /switch to a different pack or make a new one."
 PACK_ALREADY_EXISTS = "I think you're looking for [this pack](t.me/addstickers/{})."
 NO_STOLEN_PACKS = "You haven't stolen any packs yet newb."
+UNANIMATED_IN_ANIMATED = "You can't add normal stickers in an animated sticker pack. Try stealing it in a normal pack."
+ANIMATED_IN_UNANIMATED = "You can't add animated stickers in a normal sticker pack. Try stealing it in an animated pack."
+NOT_YOUR_PACK = "Hah! Nice try but you can't mess with others' stickers."
 
 DELETE_PACK = "This is beyond my powers. Use @stickers to delete sticker packs."
 DELETE_ERROR = "I couldn't delete that sticker. Looks like those Arch-Devils are at it again."
 DELETE_SUCESSFUL = "Poof! The sticker is gone."
 DELETE_NOT_REPLY = "This skill only works on stickers of packs that I have stolen."
-DELETE_NOT_YOUR_PACK = "Hah! Nice try but you can't delete other's stikcers."
 
 SETPOSITION_INVALID_INPUT = "That's not how this skill works. Reply to a sticker and try:\n/setposition _<position-number>_"
 SETPOSITION_NOT_REPLY = "Reply to the sticker whose position you wanna change."
