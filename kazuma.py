@@ -69,6 +69,7 @@ def steal(update, context):
         
         # Renaming tempsticker to the processed webm file
         if tempsticker.endswith('mp4'):
+            os.remove(tempsticker)
             tempsticker = tempsticker[:-3] + 'webm'
         
         stickerfile = open(tempsticker, 'rb')
