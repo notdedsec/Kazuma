@@ -11,7 +11,10 @@ NEW_PACK_CREATED = "New steal pack created! [Get it here](t.me/addstickers/{})."
 
 REPLY_NOT_STICKER = "This skill works only when replied to stickers."
 REPLY_NOT_MY_STICKER = "This skill only works on stickers of packs that I have stolen."
-REPLY_NOT_STICKER_IMAGE = "This skill only works on stickers and images."
+REPLY_NOT_STICKER_IMAGE = "This skill only works on stickers, images and videos."
+REPLY_VID_DURATION_ERROR = "The video is too long ({}s)!\nMax duration is 3 seconds"
+REPLY_VID_FPS_ERROR = "This skill only works on videos with maximum 30fps."
+REPLY_VID_SIZE_ERROR = "The video is too big ({}KB)!\nMax size is 256KB"
 
 STEAL_ERROR = "I couldn't steal that sticker. Blame Aqua for being so useless."
 STEAL_NOT_REPLY = "Reply to an image or a sticker to steal."

@@ -1,11 +1,14 @@
 import os
 import sys
+import cv2
 import math
 import json
 import time
 import logging
 import hashlib
+import datetime
 from PIL import Image
+from pyffmpeg import FFmpeg, FFprobe
 from telegram.ext import Updater, CommandHandler, run_async
 from telegram import Bot, TelegramError, ParseMode, InlineKeyboardMarkup, InlineKeyboardButton
 
@@ -44,16 +47,36 @@ def steal(update, context):
         if msg.reply_to_message.sticker: 
             if msg.reply_to_message.sticker.is_animated:
                 tempsticker = tempsticker[:-3]+'tgs'
+            if msg.reply_to_message.sticker.is_video:
+                tempsticker = tempsticker[:-3] + 'webm'
             file_id = msg.reply_to_message.sticker.file_id
         elif msg.reply_to_message.photo: 
             file_id = msg.reply_to_message.photo[-1].file_id
-        elif msg.reply_to_message.document: 
+        elif msg.reply_to_message.animation:
+            extension = msg.reply_to_message.animation.mime_type.split('/')[1]
+            tempsticker = tempsticker[:-3] + extension
+            file_id = msg.reply_to_message.animation.file_id
+        elif msg.reply_to_message.video:
+            extension = msg.reply_to_message.video.mime_type.split('/')[1]
+            tempsticker = tempsticker[:-3] + extension
+            file_id = msg.reply_to_message.video.file_id
+        elif msg.reply_to_message.document:
             file_id = msg.reply_to_message.document.file_id
         context.bot.get_file(file_id).download(tempsticker)
-        processimage(tempsticker)
+        
+        if not tempsticker.endswith(('webm', 'tgs')):
+            process_file(replymsg, tempsticker)
+        
+        # Renaming tempsticker to the processed webm file
+        if tempsticker.endswith('mp4'):
+            tempsticker = tempsticker[:-3] + 'webm'
+        
         stickerfile = open(tempsticker, 'rb')
+
         if tempsticker.endswith('png'):
             context.bot.addStickerToSet(user_id=user.id, name=packid, png_sticker=stickerfile, emojis=emoji)
+        elif tempsticker.endswith('webm'):
+            context.bot.addStickerToSet(user_id=user.id, name=packid, webm_sticker=stickerfile, emojis=emoji)
         else:
             context.bot.addStickerToSet(user_id=user.id, name=packid, tgs_sticker=stickerfile, emojis=emoji)
         replymsg.edit_text(s.STEAL_SUCESSFUL.format(packid), parse_mode=ParseMode.MARKDOWN)
@@ -110,17 +133,25 @@ def stealpack(update, context):
     useridhash = hashlib.sha1(bytearray(user.id)).hexdigest()
     packnamehash = hashlib.sha1(bytearray(packname.lower().encode('utf-8'))).hexdigest()
     packid = f'K{packnamehash[:10]}{useridhash[:10]}_by_{context.bot.username}'
-    ext = 'tgs' if msg.reply_to_message.sticker.is_animated else 'png'
+    
+    if msg.reply_to_message.sticker.is_animated:
+        ext = 'tgs'
+    elif msg.reply_to_message.sticker.is_video:
+        ext = 'webm'
+    else:
+        ext = 'png'
 
     skipped = False
     for sticker in oldpack.stickers:
         try:
             tempsticker = f"{str(sticker.file_id) + str(user.id)}.{ext}"
             context.bot.get_file(sticker.file_id).download(tempsticker)
-            processimage(tempsticker)
+            process_file(replymsg, tempsticker)
             stickerfile = open(tempsticker, 'rb')
             if tempsticker.endswith('png'):
                 context.bot.addStickerToSet(user_id=user.id, name=packid, png_sticker=stickerfile, emojis=sticker.emoji)
+            elif tempsticker.endswith('webm'):
+                context.bot.addStickerToSet(user_id=user.id, name=packid, webm_sticker=stickerfile, emojis=sticker.emoji)
             else:
                 context.bot.addStickerToSet(user_id=user.id, name=packid, tgs_sticker=stickerfile, emojis=sticker.emoji)
         except OSError as e:
@@ -150,6 +181,8 @@ def newpack(msg, user, tempsticker, emoji, packname, packid, sendreply, replymsg
         replymsg.edit_text(s.NEW_PACK, parse_mode=ParseMode.MARKDOWN)
         if tempsticker.endswith('png'):
             bot.createNewStickerSet(user.id, packid, packname, png_sticker=stickerfile, emojis=emoji, timeout=9999)
+        elif tempsticker.endswith('webm'):
+            bot.createNewStickerSet(user.id, packid, packname, webm_sticker=stickerfile, emojis=emoji, timeout=9999)
         else:
             bot.createNewStickerSet(user.id, packid, packname, tgs_sticker=stickerfile, emojis=emoji, timeout=9999)
         default = 0 if sql.get_default_pack(user.id) else 1
@@ -188,8 +221,6 @@ def reply(msg, text=None, replymsg=None, delete=True):
     except: pass
 
 def processimage(tempsticker):
-    if tempsticker.endswith('tgs'):
-        return
     size = (512, 512)
     im = Image.open(tempsticker)
     if (im.width and im.height) < size[0]:
@@ -204,6 +235,64 @@ def processimage(tempsticker):
         im.thumbnail(size)
     im.save(tempsticker, "PNG")
     im.close()
+
+def process_vid(tempsticker):
+    """Change file to webm format with proper dimensions (atleast one side 512px)"""
+
+    ff = FFmpeg()
+    vid = cv2.VideoCapture(tempsticker)
+
+    if tempsticker.endswith('webm'):
+        webm_tempsticker = tempsticker
+    else:
+        webm_tempsticker = os.path.splitext(tempsticker)[0] + '.webm'
+
+    h = vid.get(cv2.CAP_PROP_FRAME_HEIGHT)
+    w = vid.get(cv2.CAP_PROP_FRAME_WIDTH)
+
+    if h >= w:
+        h = 512
+        w = -1
+    else:
+        w = 512
+        h = -1
+
+    op = ff.options(f"-i {tempsticker} -filter:v scale={w}:{h} -c:a copy -an {webm_tempsticker}")
+
+def check_vid(replymsg, tempsticker):
+    """Check if the file fulfill the requirements specified in https://core.telegram.org/stickers#video-stickers"""
+
+    fp = FFprobe(tempsticker)
+    
+    # Convert duration to seconds. 00:01:02.120 -> 62.12s
+    dur, milliseconds = fp.duration.split('.')
+    x = time.strptime(dur,'%H:%M:%S')
+    duration = datetime.timedelta(hours=x.tm_hour, minutes=x.tm_min, seconds=x.tm_sec, milliseconds=int(milliseconds)).total_seconds()
+
+    frame_rate = float(fp.fps)
+    size = os.path.getsize(tempsticker)
+
+    # Duration max 3s
+    if duration > 3:
+        replymsg.edit_text(s.REPLY_VID_DURATION_ERROR.format(duration))
+
+    # Frame rate max 30fps
+    elif frame_rate > 30:
+        replymsg.edit_text(s.REPLY_VID_FPS_ERROR)
+
+    # Size max 256KB
+    elif size > 256000:
+        replymsg.edit_text(s.REPLY_VID_SIZE_ERROR.format(size/1000))
+    
+    else:
+        process_vid(tempsticker)
+    
+
+def process_file(replymsg, tempsticker):
+    if tempsticker.endswith(('.mp4', '.webm')):
+        check_vid(replymsg, tempsticker)
+    else:
+        processimage(tempsticker)
 
 def delsticker(update, context):
     msg = update.effective_message
