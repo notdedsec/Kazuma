@@ -146,7 +146,8 @@ def stealpack(update, context):
         try:
             tempsticker = f"{str(sticker.file_id) + str(user.id)}.{ext}"
             context.bot.get_file(sticker.file_id).download(tempsticker)
-            process_file(replymsg, tempsticker)
+            if not tempsticker.endswith(('webm', 'tgs')):
+                process_file(replymsg, tempsticker)
             stickerfile = open(tempsticker, 'rb')
             if tempsticker.endswith('png'):
                 context.bot.addStickerToSet(user_id=user.id, name=packid, png_sticker=stickerfile, emojis=sticker.emoji)
