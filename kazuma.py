@@ -237,7 +237,7 @@ def processimage(tempsticker):
     im.save(tempsticker, "PNG")
     im.close()
 
-def process_vid(tempsticker):
+def process_vid(frame_rate, tempsticker):
     """Change file to webm format with proper dimensions (atleast one side 512px)"""
 
     ff = FFmpeg()
@@ -258,8 +258,10 @@ def process_vid(tempsticker):
         w = 512
         h = -1
 
-    op = ff.options(f"-i {tempsticker} -filter:v scale={w}:{h} -c:a copy -an {webm_tempsticker}")
+    frame_rate_option = "-r 30" if frame_rate > 30 else ""
 
+    ff.options(f"-i {tempsticker} -filter:v scale={w}:{h} -c:a copy -an {frame_rate_option} {webm_tempsticker}")
+    
 def check_vid(replymsg, tempsticker):
     """Check if the file fulfill the requirements specified in https://core.telegram.org/stickers#video-stickers"""
 
@@ -277,16 +279,12 @@ def check_vid(replymsg, tempsticker):
     if duration > 3:
         replymsg.edit_text(s.REPLY_VID_DURATION_ERROR.format(duration))
 
-    # Frame rate max 30fps
-    elif frame_rate > 30:
-        replymsg.edit_text(s.REPLY_VID_FPS_ERROR)
-
     # Size max 256KB
     elif size > 256000:
         replymsg.edit_text(s.REPLY_VID_SIZE_ERROR.format(size/1000))
     
     else:
-        process_vid(tempsticker)
+        process_vid(frame_rate, tempsticker)
     
 
 def process_file(replymsg, tempsticker):
