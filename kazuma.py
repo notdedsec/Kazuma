@@ -1,5 +1,4 @@
 import os
-import sys
 import cv2
 import math
 import json
@@ -9,13 +8,12 @@ import hashlib
 import datetime
 from PIL import Image
 from pyffmpeg import FFmpeg, FFprobe
-from telegram.ext import Updater, CommandHandler, run_async
+from telegram.ext import Updater, CommandHandler
 from telegram import Bot, TelegramError, ParseMode, InlineKeyboardMarkup, InlineKeyboardButton
 
 import strings as s
 import database as sql
 
-@run_async
 def steal(update, context):
     msg = update.effective_message
     user = update.effective_user
@@ -106,7 +104,6 @@ def steal(update, context):
         os.system('del '+tempsticker)
         reply(msg, None, replymsg)
 
-@run_async
 def stealpack(update, context):
     msg = update.effective_message
     user = update.effective_user
@@ -351,7 +348,6 @@ def checkpacks(bot, packs):
     # checks if the pack actually exists or has been deleted
     # if a pack is deleted via @stickers, its packid will be deleted forever even if you try to re-create it with the same packname
 
-@run_async
 def mypacks(update, context):
     msg = update.effective_message
     user = update.effective_user
@@ -448,13 +444,13 @@ if __name__ == "__main__":
     os.system("title "+ Bot(botToken).first_name)
     logging.basicConfig(format='\n\n%(levelname)s\n%(asctime)s\n%(name)s\n%(message)s', level=logging.ERROR)
 
-    updater.dispatcher.add_handler(CommandHandler('steal', steal, pass_args=True))
-    updater.dispatcher.add_handler(CommandHandler('stealpack', stealpack, pass_args=True))
+    updater.dispatcher.add_handler(CommandHandler('steal', steal, pass_args=True, run_async=True))
+    updater.dispatcher.add_handler(CommandHandler('stealpack', stealpack, pass_args=True, run_async=True))
     updater.dispatcher.add_handler(CommandHandler('delsticker', delsticker))
     updater.dispatcher.add_handler(CommandHandler('delpack', delpack))
     updater.dispatcher.add_handler(CommandHandler('setposition', setposition, pass_args=True))
     updater.dispatcher.add_handler(CommandHandler('switch', switch, pass_args=True))
-    updater.dispatcher.add_handler(CommandHandler('mypacks', mypacks))
+    updater.dispatcher.add_handler(CommandHandler('mypacks', mypacks, run_async=True))
     updater.dispatcher.add_handler(CommandHandler('kstats', kstats))
     updater.dispatcher.add_handler(CommandHandler('start', start))
     updater.dispatcher.add_handler(CommandHandler('help', help))
