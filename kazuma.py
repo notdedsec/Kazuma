@@ -256,9 +256,9 @@ def process_vid(frame_rate, tempsticker):
         w = 512
         h = -1
 
-    frame_rate_option = "-r 30" if frame_rate > 30 else ""
+    frame_rate_option = "-r 30" if frame_rate > 30 else " "
 
-    ff.options(f"-i {tempsticker} -filter:v scale={w}:{h} -c:a copy -an {frame_rate_option} {webm_tempsticker}")
+    ff.options(f"-i {tempsticker} -filter:v scale={w}:{h} -c:a copy -an {frame_rate_option}{webm_tempsticker}")
     
 def check_vid(replymsg, tempsticker):
     """Check if the file fulfill the requirements specified in https://core.telegram.org/stickers#video-stickers"""
