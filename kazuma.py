@@ -105,7 +105,7 @@ def steal(update, context):
             stickerfile.close()
         except UnboundLocalError: # to deal with undefined stickerfile variable
             pass
-        os.system('del '+tempsticker)
+        os.remove(tempsticker)
         reply(msg, None, replymsg)
 
 def stealpack(update, context):
@@ -168,7 +168,7 @@ def stealpack(update, context):
                 pass
         finally: 
             stickerfile.close()
-            os.system('del '+tempsticker)
+            os.remove(tempsticker)
         try: 
             replymsg.edit_text(s.STEALING_PACK.format(oldpack.stickers.index(sticker), len(oldpack.stickers)), parse_mode=ParseMode.MARKDOWN)
         except: 
