@@ -63,8 +63,9 @@ def steal(update, context):
         context.bot.get_file(file_id).download(tempsticker)
         
         if not tempsticker.endswith(('webm', 'tgs')):
-            process_file(replymsg, tempsticker)
-        
+            if not process_file(replymsg, tempsticker):
+                return 
+
         # Renaming tempsticker to the processed webm file
         if tempsticker.endswith('mp4'):
             os.remove(tempsticker)
@@ -100,8 +101,11 @@ def steal(update, context):
             replymsg.edit_text(s.STEAL_ERROR)
             print(e.message)
     finally: 
-        stickerfile.close()
-        os.system('del '+tempsticker)
+        try:
+            stickerfile.close()
+        except UnboundLocalError: # to deal with undefined stickerfile variable
+            pass
+        os.remove(tempsticker)
         reply(msg, None, replymsg)
 
 def stealpack(update, context):
@@ -145,7 +149,8 @@ def stealpack(update, context):
             tempsticker = f"{str(sticker.file_id) + str(user.id)}.{ext}"
             context.bot.get_file(sticker.file_id).download(tempsticker)
             if not tempsticker.endswith(('webm', 'tgs')):
-                process_file(replymsg, tempsticker)
+                if not process_file(replymsg, tempsticker):
+                    return
             stickerfile = open(tempsticker, 'rb')
             if tempsticker.endswith('png'):
                 context.bot.addStickerToSet(user_id=user.id, name=packid, png_sticker=stickerfile, emojis=sticker.emoji)
@@ -163,7 +168,7 @@ def stealpack(update, context):
                 pass
         finally: 
             stickerfile.close()
-            os.system('del '+tempsticker)
+            os.remove(tempsticker)
         try: 
             replymsg.edit_text(s.STEALING_PACK.format(oldpack.stickers.index(sticker), len(oldpack.stickers)), parse_mode=ParseMode.MARKDOWN)
         except: 
@@ -276,20 +281,24 @@ def check_vid(replymsg, tempsticker):
     # Duration max 3s
     if duration > 3:
         replymsg.edit_text(s.REPLY_VID_DURATION_ERROR.format(duration))
+        return False
 
     # Size max 256KB
-    elif size > 256000:
+    if size > 256000:
         replymsg.edit_text(s.REPLY_VID_SIZE_ERROR.format(size/1000))
+        return False
     
-    else:
-        process_vid(frame_rate, tempsticker)
+    process_vid(frame_rate, tempsticker)
+    return True
     
 
 def process_file(replymsg, tempsticker):
     if tempsticker.endswith(('.mp4', '.webm')):
-        check_vid(replymsg, tempsticker)
+        if not check_vid(replymsg, tempsticker):
+            return False
     else:
         processimage(tempsticker)
+    return True
 
 def delsticker(update, context):
     msg = update.effective_message
